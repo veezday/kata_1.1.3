@@ -11,7 +11,6 @@ public class UserDaoHibernateImpl implements UserDao {
 
     }
 
-
     @Override
     public void createUsersTable() {
         String sql = "CREATE TABLE IF NOT EXISTS users (" +
@@ -40,15 +39,12 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
-        String sql = "INSERT INTO users (name, last_name, age) VALUES (:name, :last_name, :age)";
+        User user = new User(name, lastName, age);
+        user.setId(getNextId());
         Session session = Util.getSession();
 
         session.beginTransaction();
-        session.createNativeQuery(sql)
-                .setParameter("name", name)
-                .setParameter("last_name", lastName)
-                .setParameter("age", age)
-                .executeUpdate();
+        session.save(user);
         session.getTransaction().commit();
     }
 
@@ -66,11 +62,11 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public List<User> getAllUsers() {
-        String sql = "SELECT * FROM users";
+        String hql = "select u from User u";
         Session session = Util.getSession();
 
         session.beginTransaction();
-        List<User> users = session.createNativeQuery(sql, User.class).list();
+        List<User> users = session.createQuery(hql, User.class).getResultList();
         session.getTransaction().commit();
 
         return users;
@@ -84,5 +80,16 @@ public class UserDaoHibernateImpl implements UserDao {
         session.beginTransaction();
         session.createNativeQuery(sql).executeUpdate();
         session.getTransaction().commit();
+    }
+
+    private Long getNextId() {
+        String hql = "select MAX(u.id) from User u";
+        Session session = Util.getSession();
+
+        session.beginTransaction();
+        Long id = (Long) session.createQuery(hql).getSingleResult();
+        session.getTransaction().commit();
+
+        return (id != null) ? ++id : 0;
     }
 }
